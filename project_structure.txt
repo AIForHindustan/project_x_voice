@@ -1,0 +1,12 @@
+/content/project_x_voice/
+├── config/
+│   └── config.json       # Model & training settings
+├── data/
+│   ├── metadata.csv      # Your existing file
+│   └── wavs/             # All .wav files (22kHz, mono)
+├── src/
+│   ├── data_processor.py # Data loading & preprocessing
+│   ├── model.py          # BilingualTTS architecture
+│   ├── train.py          # Training logic
+│   └── synthesize.py     # Inference script
+└── requirements.txt      # Dependencies

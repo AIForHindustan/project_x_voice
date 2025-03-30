@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project_x_voice"
+version = "0.1"
+dependencies = [
+    "torch",
+    "numpy",
+    "phonemizer"
+]

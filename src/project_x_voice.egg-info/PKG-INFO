@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: project_x_voice
+Version: 0.1
+Author: Your Name
+Requires-Dist: torch
+Requires-Dist: numpy
+Requires-Dist: phonemizer

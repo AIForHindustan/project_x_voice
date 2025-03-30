@@ -1,0 +1,8 @@
+
+---
+
+### **2️⃣ Mark as Resolved**  
+Run this command to stage the resolved file:  
+
+```sh
+git add README.md
