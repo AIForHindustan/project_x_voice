@@ -1,123 +1,69 @@
-import json
 import torch
-import torch.nn.functional as F
-from pathlib import Path
+import json
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-
-# Local imports
-from data.processor import BilingualDataset, collate_fn
-from models.tts import BilingualTTS
-
-def load_config():
-    config_path = Path(__file__).parent.parent / "configs" / "train_config.json"
-    with open(config_path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-def guided_attention_loss(attn_weights, text_lens, mel_lens, sigma=0.2):
-    """Vectorized guided attention loss with per-sample length awareness"""
-    B, max_T, max_M = attn_weights.shape
-    device = attn_weights.device
-    
-    # Create grid for entire batch using broadcasting
-    t = torch.arange(max_T, device=device).float()[None, :, None]  # [1, T, 1]
-    m = torch.arange(max_M, device=device).float()[None, None, :]  # [1, 1, M]
-    
-    # Normalize by actual lengths (shape: [B, 1, 1])
-    text_ratio = t / text_lens.view(B, 1, 1)
-    mel_ratio = m / mel_lens.view(B, 1, 1)
-    
-    # Compute Gaussian weights
-    distance = text_ratio - mel_ratio
-    grid = 1 - torch.exp(-(distance**2)/(2*sigma**2))
-    
-    return (attn_weights * grid).mean()
+from pathlib import Path
+from model import BilingualTTS  # Import model from model.py
+from data_processor import BilingualDataset, collate_fn  # Import dataset and collate_fn from data_processor.py
 
 def train():
-    config = load_config()
+    # Load config file
+    config = json.load(open(Path(__file__).parent.parent / "config" / "config.json"))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # Initialize components
+    # Load the phoneme_to_id mapping from phoneme.json
+    phoneme_to_id = json.load(open(Path("path/to/phoneme.json")))  # Update with the correct path to phoneme.json
+    
+    # Initialize dataset
     dataset = BilingualDataset(
-        metadata_path=Path(config["data"]["metadata_path"]),
-        data_dir=Path(config["data"]["root_dir"]),
-        durations_path=Path(config["data"]["durations_path"]),
+        metadata_path=Path("data/metadata.csv"),
+        wav_dir=Path("data/wavs"),
         config=config
     )
     
-    model = BilingualTTS(config).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["training"]["lr"])
-    writer = SummaryWriter(log_dir=config["training"]["log_dir"])
-    global_step = 0
+    # Initialize the Bilingual TTS model with the phoneme_to_id mapping
+    model = BilingualTTS(config, phoneme_to_id=phoneme_to_id).to(device)  # Pass phoneme_to_id here
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
     
     # Training loop
     for epoch in range(config["training"]["epochs"]):
         model.train()
+        total_loss = 0.0
         for batch in DataLoader(dataset, batch_size=config["training"]["batch_size"], collate_fn=collate_fn):
             optimizer.zero_grad()
             
-            # Prepare inputs with proper tensor shapes
-            inputs = {
-                "phonemes": batch["phonemes"].to(device),
-                "text_lengths": batch["text_lengths"].squeeze().to(device),  # [B]
-                "lang_ids": batch["lang_ids"].squeeze().to(device),          # [B]
-                "spk_ids": batch["spk_ids"].squeeze().to(device),            # [B]
-                "mel_input": batch["mel"].to(device)[:, :-1]  # Teacher forcing
-            }
+            # Prepare the batch data
+            phonemes = batch["phonemes"].to(device)
+            text_lengths = batch["text_lengths"].to(device)
+            lang_ids = batch["lang_ids"].to(device)
+            emotion_ids = batch["emotion_ids"].to(device)  # Ensure this is in the batch
+            mel = batch["mel"].to(device).transpose(1, 2)  # [B, n_mels, T]
             
-            # Forward pass
-            outputs = model(**inputs)
-            
-            # Loss calculation
-            mel_target = batch["mel"].to(device)[:, 1:]
-            mse_loss = F.mse_loss(outputs["mel_pred"], mel_target)
-            
-            # Log-space duration loss with numerical stability
-            dur_loss = F.mse_loss(
-                outputs["log_durations"],
-                torch.log(batch["durations"].to(device).float() + 1e-8)
+            # Forward pass through the model
+            mel_pred = model(
+                phonemes, text_lengths, lang_ids, emotion_ids
             )
             
-            # Attention loss with actual lengths
-            ga_loss = guided_attention_loss(
-                outputs["attn_weights"],
-                text_lens=inputs["text_lengths"],
-                mel_lens=batch["mel_lengths"].squeeze().to(device)
-            )
+            # Compute loss (Mean Squared Error Loss)
+            loss = torch.nn.functional.mse_loss(mel_pred, mel)
             
-            total_loss = (
-                config["loss_weights"]["mse"] * mse_loss +
-                config["loss_weights"]["duration"] * dur_loss +
-                config["loss_weights"]["attention"] * ga_loss
-            )
-            
-            # Backprop with gradient clipping
-            total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # Backpropagate and optimize
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             
-            # Enhanced logging with global step
-            writer.add_scalar("Loss/total", total_loss.item(), global_step)
-            writer.add_scalars("Loss/components", {
-                "mse": mse_loss.item(),
-                "duration": dur_loss.item(),
-                "attention": ga_loss.item()
-            }, global_step)
-            global_step += 1
+            total_loss += loss.item()
+            
+            # Log the loss for the current batch
+            print(f"Epoch {epoch+1}/{config['training']['epochs']} | Batch Loss: {loss.item():.4f}")
         
-        # Save checkpoint every epoch
-        torch.save({
-            "epoch": epoch,
-            "model": model.state_dict(),
-            "optimizer": optimizer.state_dict()
-        }, f"{config['training']['checkpoint_dir']}/checkpoint_{epoch}.pt")
+        # Average loss for the epoch
+        avg_loss = total_loss / len(dataset)
+        print(f"Epoch {epoch+1} | Average Loss: {avg_loss:.4f}")
         
-        # First test synthesis after 500 steps (Placeholder)
-        if global_step >= 500:
-            print("Running first synthesis test...")
-            # synthesize_test_sample(model, dataset[0])  # Uncomment and implement
-    
-    writer.close()
+        # Save the model checkpoint after each epoch
+        checkpoint_path = Path("checkpoints") / f"epoch_{epoch+1}.pt"
+        torch.save(model.state_dict(), checkpoint_path)
+        print(f"Model checkpoint saved at {checkpoint_path}")
 
 if __name__ == "__main__":
     train()

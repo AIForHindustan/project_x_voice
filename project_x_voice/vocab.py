@@ -1,33 +1,24 @@
+import os
 import json
-from collections import Counter
-from src.data_processor import BilingualDataset
+from pathlib import Path
 
-def main():
-    # Load dataset
-    dataset = BilingualDataset(
-        metadata_path="data/metadata.csv",
-        data_dir="data",
-        config=json.load(open("config/config.json"))
+def load_phoneme_mapping():
+    # Adjust path: vocab.py is in project_x_voice/project_x_voice, config is one level up.
+
+    # Get the absolute path based on script location
+    config_path = os.path.join(
+        os.path.dirname(__file__), 
+        "../config/phonemes.json"
     )
 
-    counter = Counter()
-    for i in range(len(dataset)):
-        item = dataset[i]
-        if item is not None:
-            counter.update([chr(c) for c in item["phonemes"].tolist()])
+    with open(config_path, "r") as f:  # Corrected indentation
+        mapping = json.load(f)
 
-    # Create vocabulary mapping
-    vocab = {
-        "<pad>": 0,
-        "<unk>": 1,
-        **{char: i + 2 for i, (char, _) in enumerate(counter.most_common())}
-    }
+    return mapping  # Corrected indentation
 
-    # Save phoneme mapping
-    with open("config/phonemes.json", "w", encoding="utf-8") as f:
-        json.dump(vocab, f, ensure_ascii=False, indent=4)
-
-    print(f"✅ Created vocabulary with {len(vocab)} tokens and saved to config/phonemes.json")
+# Export the mapping as phoneme_to_id 
+phoneme_to_id = load_phoneme_mapping()
 
 if __name__ == "__main__":
-    main()
+    print("Phoneme mapping loaded:", phoneme_to_id)
+

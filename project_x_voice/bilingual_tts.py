@@ -11,8 +11,8 @@ class LocationAwareAttention(nn.Module):
         self.score_proj = nn.Linear(10, attn_dim)
         
     def forward(self, query, memory, attn_prev):
-        energy = torch.tanh(self.query_proj(query.unsqueeze(1)) + self.memory_proj(memory)
-        loc_energy = self.score_proj(self.location_conv(attn_prev.unsqueeze(1)).transpose(1, 2)
+        energy = torch.tanh(self.query_proj(query.unsqueeze(1)) + self.memory_proj(memory))
+        loc_energy = self.score_proj(self.location_conv(attn_prev.unsqueeze(1)).transpose(1, 2))
         energy = energy + loc_energy
         return F.softmax(energy, dim=1)
 
