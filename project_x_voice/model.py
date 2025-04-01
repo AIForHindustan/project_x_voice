@@ -57,9 +57,11 @@ class BilingualTTS(nn.Module):
 
         # Decoder to predict Mel-spectrogram
         mel_pred = self.decoder(lstm_out)  # [B, T, n_mels]
+
+        # Ensure the shape is [B, n_mels, T] (Transpose as needed)
+        mel_pred = mel_pred.transpose(1, 2)  # [B, n_mels, T]
         
-        # Transpose to match expected output shape [B, n_mels, T]
-        return mel_pred.transpose(1, 2)
+        return mel_pred
 
 # Compute loss function (Mean Squared Error Loss)
 def compute_loss(mel_pred, mel_target):

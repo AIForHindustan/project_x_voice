@@ -22,7 +22,7 @@
     },
     "data": {
         "sample_rate": 22050,
-        "hop_length": 128,  // Adjusted hop_length to increase time frames
+        "hop_length": 128,
         "n_fft": 1024,
         "metadata_path": "data/metadata.csv",
         "root_dir": "data/",
