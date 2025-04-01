@@ -6,17 +6,17 @@ from model import BilingualTTS  # Import model from model.py
 from data_processor import BilingualDataset, collate_fn  # Import dataset and collate_fn from data_processor.py
 
 def train():
-    # Load config file
-    config = json.load(open(Path(__file__).parent.parent / "config" / "config.json"))
+    # Load config file from Google Drive
+    config = json.load(open(Path('/content/drive/MyDrive/project_x_voice/config/config.json')))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Load the phoneme_to_id mapping from phoneme.json
-    phoneme_to_id = json.load(open(Path("path/to/phoneme.json")))  # Update with the correct path to phoneme.json
+    phoneme_to_id = json.load(open(Path('/content/drive/MyDrive/project_x_voice/config/phonemes.json')))
     
     # Initialize dataset
     dataset = BilingualDataset(
-        metadata_path=Path("data/metadata.csv"),
-        wav_dir=Path("data/wavs"),
+        metadata_path=Path('/content/drive/MyDrive/project_x_voice/data/metadata.csv'),
+        wav_dir=Path('/content/drive/MyDrive/project_x_voice/data/wavs'),
         config=config
     )
     
@@ -61,7 +61,7 @@ def train():
         print(f"Epoch {epoch+1} | Average Loss: {avg_loss:.4f}")
         
         # Save the model checkpoint after each epoch
-        checkpoint_path = Path("checkpoints") / f"epoch_{epoch+1}.pt"
+        checkpoint_path = Path('/content/drive/MyDrive/project_x_voice/checkpoints') / f"epoch_{epoch+1}.pt"
         torch.save(model.state_dict(), checkpoint_path)
         print(f"Model checkpoint saved at {checkpoint_path}")
 

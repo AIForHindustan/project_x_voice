@@ -13,8 +13,12 @@ class BilingualTTS(nn.Module):
         
         # Define the model layers
         self.phoneme_embedding = nn.Embedding(len(phoneme_to_id), self.hidden_dim)  # Embedding layer for phonemes
-        self.lang_embedding = nn.Embedding(len(config["languages"]), self.hidden_dim)  # Embedding layer for languages
-        self.emotion_embedding = nn.Embedding(len(config["emotions"]), self.hidden_dim)  # Embedding layer for emotions
+        
+        # Update: Use languages from config["model"]["languages"]
+        self.lang_embedding = nn.Embedding(len(config["model"]["languages"]), self.hidden_dim)  # Embedding layer for languages
+        
+        # Update: Use the number of emotions from config["model"]["num_emotions"]
+        self.emotion_embedding = nn.Embedding(config["model"]["num_emotions"], self.hidden_dim)  # Embedding layer for emotions
         
         # LSTM layer to process embeddings (sequence modeling)
         self.lstm = nn.LSTM(input_size=self.hidden_dim, hidden_size=self.hidden_dim, batch_first=True)

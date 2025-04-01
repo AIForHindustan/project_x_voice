@@ -37,9 +37,9 @@ class MelProcessor:
 class BilingualDataset(Dataset):
     def __init__(self, metadata_path, wav_dir, config):
         self.config = config
-        # Using the correct metadata path (one level up)
-        self.metadata = pd.read_csv('../data/metadata.csv')
-        self.wav_dir = Path(wav_dir)
+        # Use absolute path for metadata and wavs directory from Google Drive
+        self.metadata = pd.read_csv('/content/drive/MyDrive/project_x_voice/Data/metadata.csv')
+        self.wav_dir = Path('/content/drive/MyDrive/project_x_voice/Data/wavs/')
         self.mel_processor = MelProcessor(config)
         self.epi_hin = Epitran('hin-Deva')
         self.normalizer = DevanagariNormalizer()
@@ -90,6 +90,7 @@ class BilingualDataset(Dataset):
             wav_path = self.wav_dir / row["audio_file"]
             phoneme_ids = self._text_to_phonemes(row["text"], row["language"])
             
+            # Ensure no zero-length sample by assigning <unk> if empty.
             if len(phoneme_ids) == 0:
                 phoneme_ids = [self.phoneme_map.get("<unk>", 0)]
             
@@ -103,6 +104,7 @@ class BilingualDataset(Dataset):
                 "phonemes": torch.tensor(phoneme_ids, dtype=torch.long),
                 "mel": mel,
                 "lang_id": torch.tensor(1 if row["language"].lower() == "hi" else 0, dtype=torch.long),
+                "emotion_ids": torch.tensor(row["emotion_id"], dtype=torch.long),
                 "text_length": torch.tensor(len(phoneme_ids), dtype=torch.long),
                 "mel_length": torch.tensor(mel.size(0), dtype=torch.long)
             })
@@ -115,26 +117,32 @@ class BilingualDataset(Dataset):
         return len(self.processed_data)
 
     def __getitem__(self, idx):
-        item = self.processed_data[idx]
-        return (
+        # Return the dictionary directly so collate_fn can use keys.
+        return self.processed_data[idx]
+
+def collate_fn(batch):
+    phonemes, text_lengths, lang_ids, mels, mel_lengths, emotion_ids = zip(*[
+        (
             item["phonemes"],
             item["text_length"],
             item["lang_id"],
             item["mel"],
-            item["mel_length"]
+            item["mel_length"],
+            item["emotion_ids"]
         )
-
-def collate_fn(batch):
-    phonemes, text_lengths, lang_ids, mels, mel_lengths = zip(*batch)
+        for item in batch
+    ])
     phonemes_padded = pad_sequence(phonemes, batch_first=True, padding_value=0)
     mels_padded = pad_sequence(mels, batch_first=True, padding_value=-80.0)
     text_lengths = torch.stack(text_lengths)
     lang_ids = torch.stack(lang_ids)
     mel_lengths = torch.stack(mel_lengths)
+    emotion_ids = torch.stack(emotion_ids)
     return {
         "phonemes": phonemes_padded,
         "text_lengths": text_lengths,
         "lang_ids": lang_ids,
         "mel": mels_padded,
-        "mel_lengths": mel_lengths
+        "mel_lengths": mel_lengths,
+        "emotion_ids": emotion_ids
     }
