@@ -1,44 +1,51 @@
 {
-    "model": {
-        "vocab_size": 256,
-        "n_mels": 80,
-        "hidden_dim": 512,
-        "num_layers": 3,
-        "languages": ["en", "hi"],
-        "language_embedding_dim": 64,
-        "emotion_embedding_dim": 32,
-        "speaker_embedding_dim": 128,
-        "input_dim": 256,
-        "num_emotions": 6,
-        "num_speakers": 1,
-        "dropout": 0.1
-    },
-    "training": {
-        "batch_size": 2,
-        "learning_rate": 0.001,
-        "epochs": 100,
-        "checkpoint_dir": "checkpoints",
-        "log_dir": "logs"
-    },
-    "data": {
-        "sample_rate": 22050,
-        "hop_length": 128,
-        "n_fft": 1024,
-        "metadata_path": "data/metadata.csv",
-        "root_dir": "data/",
-        "wav_dir": "data/wavs"
-    },
-    "phoneme_settings": {
-        "max_phoneme_length": 200,
-        "min_phoneme_length": 2
-    },
-    "vocoder": {
-        "max_wav_value": 32768.0,
-        "mel_fmin": 0.0,
-        "mel_fmax": 16000.0
-    },
-    "loss_weights": {
-        "mse": 1.0,
-        "attention": 0.5
-    }
+  "paths": {
+    "base_dir": "project_x_voice",
+    "metadata_path": "Data/metadata.csv",
+    "wav_dir": "Data/wavs",
+    "checkpoint_dir": "checkpoints",
+    "log_dir": "logs"
+  },
+  "model": {
+    "vocab_size": 256,
+    "n_mels": 80,
+    "hidden_dim": 512,
+    "num_layers": 3,
+    "languages": ["en", "hi"],
+    "language_embedding_dim": 64,
+    "emotion_embedding_dim": 32,
+    "speaker_embedding_dim": 128,
+    "input_dim": 256,
+    "num_emotions": 6,
+    "num_speakers": 1,
+    "dropout": 0.1
+  },
+  "training": {
+    "batch_size": 1,
+    "learning_rate": 0.001,
+    "epochs": 50,
+    "checkpoint_dir": "checkpoints",
+    "log_dir": "logs"
+  },
+  "data": {
+    "sample_rate": 22050,
+    "hop_length": 128,
+    "n_fft": 1024,
+    "metadata_path": "data/metadata.csv",
+    "root_dir": "data/",
+    "wav_dir": "data/wavs"
+  },
+  "phoneme_settings": {
+    "max_phoneme_length": 200,
+    "min_phoneme_length": 2
+  },
+  "vocoder": {
+    "max_wav_value": 32768.0,
+    "mel_fmin": 0.0,
+    "mel_fmax": 16000.0
+  },
+  "loss_weights": {
+    "mse": 1.0,
+    "attention": 0.5
+  }
 }
