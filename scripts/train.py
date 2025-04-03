@@ -7,6 +7,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torchaudio
+from torchaudio.transforms import GriffinLim
 
 # Ensure project root is in sys.path
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -105,11 +106,12 @@ def train():
     with torch.no_grad():
         test_mel = model(test_phonemes, test_text_lengths, test_lang_ids, test_emotion_ids)
 
-    test_mel = test_mel.squeeze(0).cpu()  # Remove batch dim
-    if test_mel.dim() == 1:
-        test_mel = test_mel.unsqueeze(0)  # Ensure shape is [1, time] for mono
+    # Convert mel spectrogram to waveform using Griffin-Lim
+    griffin_lim = GriffinLim(n_iter=32)
+    waveform = griffin_lim(test_mel.squeeze(0).cpu())
 
-    torchaudio.save("output.wav", test_mel, sample_rate=22050, format="wav", encoding="PCM_S", bits_per_sample=16)
+    # Save the waveform correctly
+    torchaudio.save("output.wav", waveform.unsqueeze(0), sample_rate=22050, format="wav", encoding="PCM_S", bits_per_sample=16)
     print("Generated audio saved as output.wav")
 
 if __name__ == "__main__":
