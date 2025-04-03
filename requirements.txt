@@ -1,5 +1,6 @@
 torch==2.6.0
 torchaudio==2.6.0
+torchvision==0.17.0  # Ensuring full torch ecosystem support
 pandas==2.2.2
 phonemizer==3.3.0
 epitran==1.21
@@ -10,3 +11,7 @@ scipy==1.11.4
 matplotlib==3.8.0
 indic-nlp-library==0.92
 langdetect==1.0.9
+tqdm==4.66.1  # Progress tracking in training loops
+numba==0.58.1  # Performance boost for librosa
+sentencepiece==0.1.99  # If phoneme tokenization needs it
+inflect==7.2.1  # Handling text normalization
